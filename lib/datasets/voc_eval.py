@@ -202,4 +202,4 @@ def voc_eval(detpath,
          prec = -1
          ap = -1
 
-    return rec, prec, ap
+    return rec, prec, ap, fp, tp, npos

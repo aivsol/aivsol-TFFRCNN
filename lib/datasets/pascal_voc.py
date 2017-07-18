@@ -288,7 +288,9 @@ class pascal_voc(imdb):
             self._image_set + '.txt')
         cachedir = os.path.join(self._devkit_path, 'annotations_cache')
         aps = []
-        recs = []
+        fps = []
+        tps = []
+        nposes = []
         # The PASCAL VOC metric changed in 2010
         use_07_metric = True if int(self._year) < 2010 else False
         print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
@@ -298,22 +300,28 @@ class pascal_voc(imdb):
             if cls == '__background__':
                 continue
             filename = self._get_voc_results_file_template().format(cls)
-            rec, prec, ap = voc_eval(
+            rec, prec, ap, fp, tp, npos  = voc_eval(
                 filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
                 use_07_metric=use_07_metric)
             aps += [ap]
-            recs += [np.mean(rec)]
-            print ('Recall for {} = {:.4f}'.format(cls, np.mean(rec)))
+            fps += [fp[-1]]
+            tps += [tp[-1]]
+            nposes += [npos]
+            print ('Recall for {} = {:.4f}'.format(cls, rec[-1]))
             print('AP for {} = {:.4f}'.format(cls, ap))
             with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
                 cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
         print('Mean AP = {:.4f}'.format(np.mean(aps)))
-        print ('Mean Rec = {:.4f}'.format(np.mean(recs)))
         print('~~~~~~~~')
         print('Results:')
         for ap in aps:
             print('{:.3f}'.format(ap))
         print('mAP: {:.3f}'.format(np.mean(aps)))
+        #print('tps is {}'.format(tps))
+        #print('nposes is {}'.format(nposes))
+        #print('fps is {}'.format(fps))
+        recs = np.sum(tps) / float(np.sum(nposes))
+        print('Recall = {:.4f}'.format(recs))
         print('~~~~~~~~')
         print('')
         print('--------------------------------------------------------------')
