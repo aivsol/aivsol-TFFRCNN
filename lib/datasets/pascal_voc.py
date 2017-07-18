@@ -288,6 +288,7 @@ class pascal_voc(imdb):
             self._image_set + '.txt')
         cachedir = os.path.join(self._devkit_path, 'annotations_cache')
         aps = []
+        recs = []
         # The PASCAL VOC metric changed in 2010
         use_07_metric = True if int(self._year) < 2010 else False
         print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
@@ -301,15 +302,18 @@ class pascal_voc(imdb):
                 filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
                 use_07_metric=use_07_metric)
             aps += [ap]
+            recs += [np.mean(rec)]
+            print ('Recall for {} = {:.4f}'.format(cls, np.mean(rec)))
             print('AP for {} = {:.4f}'.format(cls, ap))
             with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
                 cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
         print('Mean AP = {:.4f}'.format(np.mean(aps)))
+        print ('Mean Rec = {:.4f}'.format(np.mean(recs)))
         print('~~~~~~~~')
         print('Results:')
         for ap in aps:
             print('{:.3f}'.format(ap))
-        print('{:.3f}'.format(np.mean(aps)))
+        print('mAP: {:.3f}'.format(np.mean(aps)))
         print('~~~~~~~~')
         print('')
         print('--------------------------------------------------------------')
