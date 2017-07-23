@@ -141,10 +141,15 @@ if __name__ == '__main__':
     im_names = glob.glob(os.path.join(cfg.DATA_DIR, 'demo', '*.png')) + \
                glob.glob(os.path.join(cfg.DATA_DIR, 'demo', '*.jpg'))
 
+    OUTPUT_DIR = os.path.join(cfg.DATA_DIR, 'demo', 'output')
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
     for im_name in im_names:
         print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
         print 'Demo for {:s}'.format(im_name)
         demo(sess, net, im_name)
 
     plt.show()
+
 
