@@ -24,8 +24,8 @@ import ds_utils
 
 class gtsdb(imdb):
     def __init__(self, image_set, year, devkit_path=None):
-        imdb.__init__(self, 'gtsdb' + year + '_' + image_set)
-        self._year = year
+        imdb.__init__(self, 'gtsdb' + '_' + image_set)
+        self._year = '2009'
         self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \
                             else devkit_path
@@ -40,12 +40,11 @@ class gtsdb(imdb):
                          'snow', 'animals', 'restriction-ends', 'go-right', 'go-left', 'go-straight',
                          'go-right-straight', 'go-left-straight', 'keep-right', 'keep-left', 'roundabout',
                          'restrict-ends-overtaking', 'restrict-ends-overtaking-truck')
-
         self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
         self._image_ext = '.ppm'
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
-        self._roidb_handler = self.selective_search_roidb
+        self._roidb_handler = self.gt_roidb
         self._salt = str(uuid.uuid4())
         self._comp_id = 'comp4'
 
