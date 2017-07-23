@@ -35,7 +35,7 @@ cfg = __C
 __C.IS_RPN = True
 __C.ANCHOR_SCALES = [8, 16, 32]
 __C.NCLASSES = 44
-
+#__C.NCLASSES = 21
 # multiscale training and testing
 __C.IS_MULTISCALE = False
 __C.IS_EXTRAPOLATING = True
