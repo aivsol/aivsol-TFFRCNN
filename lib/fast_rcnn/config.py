@@ -34,7 +34,7 @@ cfg = __C
 # region proposal network (RPN) or not
 __C.IS_RPN = True
 __C.ANCHOR_SCALES = [8, 16, 32]
-__C.NCLASSES = 21
+__C.NCLASSES = 44
 
 # multiscale training and testing
 __C.IS_MULTISCALE = False
