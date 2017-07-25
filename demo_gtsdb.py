@@ -17,13 +17,6 @@ from lib.utils.timer import Timer
 
 plt.switch_backend('agg')
 
-CLASSES = ('__background__',
-           'aeroplane', 'bicycle', 'bird', 'boat',
-           'bottle', 'bus', 'car', 'cat', 'chair',
-           'cow', 'diningtable', 'dog', 'horse',
-           'motorbike', 'person', 'pottedplant',
-           'sheep', 'sofa', 'train', 'tvmonitor')
-
 CLASSES = ('__background__',  # always index 0
          'speedlimit-20', 'speedlimit-30', 'speedlimit-50',
          'speedlimit-60', 'speedlimit-70', 'speedlimit-80',

@@ -102,24 +102,9 @@ class gtsdb(imdb):
         return os.path.join(cfg.DATA_DIR, 'GTSDB')
 
     def gt_roidb(self):
-        """
-        Return the database of ground-truth regions of interest.
-
-        This function loads/saves from/to a cache file to speed up future calls.
-        """
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
-            return roidb
 
         gt_roidb = [self._load_gtsdb_annotation(index)
                     for index in self.image_index]
-        with open(cache_file, 'wb') as fid:
-            cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
-
         return gt_roidb
 
     def selective_search_roidb(self):
@@ -243,95 +228,96 @@ class gtsdb(imdb):
             filename)
         return path
 
-    def _write_voc_results_file(self, all_boxes):
-        for cls_ind, cls in enumerate(self.classes):
-            if cls == '__background__':
-                continue
-            print 'Writing {} VOC results file'.format(cls)
-            filename = self._get_voc_results_file_template().format(cls)
-            with open(filename, 'wt') as f:
-                for im_ind, index in enumerate(self.image_index):
-                    dets = all_boxes[cls_ind][im_ind]
-                    if dets == []:
-                        continue
-                    # the VOCdevkit expects 1-based indices
-                    for k in xrange(dets.shape[0]):
-                        f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
-                                format(index, dets[k, -1],
-                                       dets[k, 0] + 1, dets[k, 1] + 1,
-                                       dets[k, 2] + 1, dets[k, 3] + 1))
-
-    def _do_python_eval(self, output_dir = 'output'):
-        annopath = os.path.join(
-            self._devkit_path,
-            'VOC' + self._year,
-            'Annotations',
-            '{:s}.xml')
-        imagesetfile = os.path.join(
-            self._devkit_path,
-            'VOC' + self._year,
-            'ImageSets',
-            'Main',
-            self._image_set + '.txt')
-        cachedir = os.path.join(self._devkit_path, 'annotations_cache')
-        aps = []
-        # The PASCAL VOC metric changed in 2010
-        use_07_metric = True if int(self._year) < 2010 else False
-        print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
-        for i, cls in enumerate(self._classes):
-            if cls == '__background__':
-                continue
-            filename = self._get_voc_results_file_template().format(cls)
-            rec, prec, ap = voc_eval(
-                filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
-                use_07_metric=use_07_metric)
-            aps += [ap]
-            print('AP for {} = {:.4f}'.format(cls, ap))
-            with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
-                cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
-        print('Mean AP = {:.4f}'.format(np.mean(aps)))
-        print('~~~~~~~~')
-        print('Results:')
-        for ap in aps:
-            print('{:.3f}'.format(ap))
-        print('{:.3f}'.format(np.mean(aps)))
-        print('~~~~~~~~')
-        print('')
-        print('--------------------------------------------------------------')
-        print('Results computed with the **unofficial** Python eval code.')
-        print('Results should be very close to the official MATLAB eval code.')
-        print('Recompute with `./tools/reval.py --matlab ...` for your paper.')
-        print('-- Thanks, The Management')
-        print('--------------------------------------------------------------')
-
-    def _do_matlab_eval(self, output_dir='output'):
-        print '-----------------------------------------------------'
-        print 'Computing results with the official MATLAB eval code.'
-        print '-----------------------------------------------------'
-        path = os.path.join(cfg.ROOT_DIR, 'lib', 'datasets',
-                            'VOCdevkit-matlab-wrapper')
-        cmd = 'cd {} && '.format(path)
-        cmd += '{:s} -nodisplay -nodesktop '.format(cfg.MATLAB)
-        cmd += '-r "dbstop if error; '
-        cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\'); quit;"' \
-               .format(self._devkit_path, self._get_comp_id(),
-                       self._image_set, output_dir)
-        print('Running:\n{}'.format(cmd))
-        status = subprocess.call(cmd, shell=True)
 
     def evaluate_detections(self, all_boxes, output_dir):
-        self._write_voc_results_file(all_boxes)
-        self._do_python_eval(output_dir)
-        if self.config['matlab_eval']:
-            self._do_matlab_eval(output_dir)
-        if self.config['cleanup']:
-            for cls in self._classes:
-                if cls == '__background__':
-                    continue
-                filename = self._get_voc_results_file_template().format(cls)
-                os.remove(filename)
+        # Get GT
+        gt = self.gt_roidb()
+        aps = []
+        arcs = []
+        atps = []
+        afps = []
+        afns = []
+        # Looping over classes
+        for cls_index in xrange(1, len(self._classes)):
+            print 'CLASS: ', cls_index, ' ', self._classes[cls_index]
+            cls_detections = all_boxes[cls_index]
+            tp_total = 0; fp_total = 0; fn_total = 0
+            # Looping over images within the context of a particular class
+            for image_index in range(len(cls_detections)):
+                # Retrieve detections for this particular image and class
+                img_cls_detections = cls_detections[image_index]
+                # True Positive, False Positive and False Negative
+                tp = 0; fp = 0; fn = 0
+                # Retrieve GT for this particular image and class
+                gt_boxes = gt[image_index]['boxes']
+                gt_cls = gt[image_index]['gt_classes']
+                gt_boxes_cls = gt_boxes[np.where(gt_cls==cls_index)]
+                # Insert classes you want to check and uncomment print statements
+                #debug = [10, 5, 3]
+                #if cls_index in debug:
+                #    print 'NEW IMAGE'
+                #    for gt_box in gt_boxes_cls:
+                #        print gt_box
+                if len(img_cls_detections) > 0:
+                    # Let's go over each detection
+                    for det in img_cls_detections:
+                        bbox = det[:4]
+                        score = det[4]
+
+                        tp_found = False
+                        #if cls_index in debug:
+                        #    print cls_index, ' BBOX: ', bbox, 'Score: ', score
+                        for gt_box in gt_boxes_cls:
+                            iou = self.iou(bbox, gt_box)
+                            if iou  > 0.5:
+                                tp+=1 # If the detection matches any gt, tp++
+                                tp_found = True
+                                break # Not sure if we should break
+                        if not tp_found:
+                            fp+=1 # If the detection doesn't match any gt, fp++
+                # GT which don't correspond to any detection are added to fn
+                fn = len(gt_boxes_cls) - tp
+                tp_total += tp
+                fp_total += fp
+                fn_total +=fn
+
+            print tp_total, fp_total, fn_total
+            if tp_total > 0:
+                prec = tp_total/float((tp_total + fp_total))
+                recall = tp_total/float((tp_total + fn_total))
+                print('Precision for {} = {:.4f}'.format(
+                                                self._classes[cls_index],
+                                                prec))
+                print ('Recall for {} = {:.4f}'.format(
+                                                self._classes[cls_index],
+                                                recall))
+                aps += [prec]
+                arcs += [recall]
+                atps += [tp_total]
+                afps += [fp_total]
+                afns += [fn_total]
+        print ('Average Precision: {:.4f}'.format(np.mean(aps)))
+        print ('Average Recall: {:.4f}'.format(np.mean(arcs)))
+        print ('Total TP: {}'.format(np.sum(atps)))
+        print ('Total FP: {}'.format(np.sum(afps)))
+        print ('Total FN: {}'.format(np.sum(afns)))
+
+    def iou(self, boxA, boxB):
+	ixmin = np.maximum(boxA[0], boxB[0])
+	iymin = np.maximum(boxA[1], boxB[1])
+	ixmax = np.minimum(boxA[2], boxB[2])
+	iymax = np.minimum(boxA[3], boxB[3])
+	iw = np.maximum(ixmax - ixmin + 1., 0.)
+	ih = np.maximum(iymax - iymin + 1., 0.)
+	inters = iw * ih
+
+	# union
+	uni = ((boxB[2] - boxB[0] + 1.) * (boxB[3] - boxB[1] + 1.) +
+	       (boxA[2] - boxA[0] + 1.) * (boxA[3] - boxA[1] + 1.) - inters)
+
+	overlaps = inters / uni
+
+        return overlaps
 
     def competition_mode(self, on):
         if on:
