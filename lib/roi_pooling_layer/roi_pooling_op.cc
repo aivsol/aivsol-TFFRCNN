@@ -249,11 +249,12 @@ static void RoiPoolingKernel(
   if (!context->status().ok()) {
     return;
   }
-
+#if GOOGLE_CUDA
   ROIPoolForwardLaucher(
     bottom_data->flat<float>().data(), spatial_scale, num_rois, height,
     width, channels, pooled_height, pooled_width, bottom_rois->flat<float>().data(),
     output->flat<float>().data(), argmax->flat<int>().data(), context->eigen_device<Eigen::GpuDevice>());
+#endif
 }
 
 template <class T>
@@ -326,8 +327,9 @@ class RoiPoolOp<Eigen::GpuDevice, T> : public OpKernel {
   float spatial_scale_;
 };
 
+#if GOOGLE_CUDA
 REGISTER_KERNEL_BUILDER(Name("RoiPool").Device(DEVICE_GPU).TypeConstraint<float>("T"), RoiPoolOp<Eigen::GpuDevice, float>);
-
+#endif
 
 bool ROIPoolBackwardLaucher(const float* top_diff, const float spatial_scale, const int batch_size, const int num_rois,
     const int height, const int width, const int channels, const int pooled_height,
@@ -347,10 +349,12 @@ static void RoiPoolingGradKernel(
     return;
   }
 
+#if GOOGLE_CUDA
   ROIPoolBackwardLaucher(
     out_backprop->flat<float>().data(), spatial_scale, batch_size, num_rois, height,
     width, channels, pooled_height, pooled_width, bottom_rois->flat<float>().data(),
     output->flat<float>().data(), argmax_data->flat<int>().data(), context->eigen_device<Eigen::GpuDevice>());
+#endif
 }
 
 
@@ -427,4 +431,6 @@ class RoiPoolGradOp : public OpKernel {
   float spatial_scale_;
 };
 
+#if GOOGLE_CUDA
 REGISTER_KERNEL_BUILDER(Name("RoiPoolGrad").Device(DEVICE_GPU).TypeConstraint<float>("T"), RoiPoolGradOp<Eigen::GpuDevice, float>);
+#endif
