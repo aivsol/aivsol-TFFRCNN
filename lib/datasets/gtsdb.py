@@ -239,7 +239,6 @@ class gtsdb(imdb):
         afns = []
         # Looping over classes
         for cls_index in xrange(1, len(self._classes)):
-            print 'CLASS: ', cls_index, ' ', self._classes[cls_index]
             cls_detections = all_boxes[cls_index]
             tp_total = 0; fp_total = 0; fn_total = 0
             # Looping over images within the context of a particular class
@@ -252,55 +251,55 @@ class gtsdb(imdb):
                 gt_boxes = gt[image_index]['boxes']
                 gt_cls = gt[image_index]['gt_classes']
                 gt_boxes_cls = gt_boxes[np.where(gt_cls==cls_index)]
-                # Insert classes you want to check and uncomment print statements
-                #debug = [10, 5, 3]
-                #if cls_index in debug:
-                #    print 'NEW IMAGE'
-                #    for gt_box in gt_boxes_cls:
-                #        print gt_box
-                if len(img_cls_detections) > 0:
-                    # Let's go over each detection
-                    for det in img_cls_detections:
-                        bbox = det[:4]
-                        score = det[4]
 
-                        tp_found = False
-                        #if cls_index in debug:
-                        #    print cls_index, ' BBOX: ', bbox, 'Score: ', score
-                        for gt_box in gt_boxes_cls:
-                            iou = self.iou(bbox, gt_box)
-                            if iou  > 0.5:
-                                tp+=1 # If the detection matches any gt, tp++
-                                tp_found = True
-                                break # Not sure if we should break
-                        if not tp_found:
-                            fp+=1 # If the detection doesn't match any gt, fp++
-                # GT which don't correspond to any detection are added to fn
-                fn = len(gt_boxes_cls) - tp
+                # Keep track of GT which are matched by a detection
+                markings = [False] * len(gt_boxes_cls)
+                # Let's go over each detection
+                for det in img_cls_detections:
+                    bbox = det[:4]
+
+                    tp_found = False
+                    for idx, gt_box in enumerate(gt_boxes_cls):
+                        # Continue if the GT is already matched
+                        if markings[idx] is True:
+                            continue
+                        iou = self.iou(bbox, gt_box)
+                        if iou  > 0.5:
+                            tp+=1 # If the detection matches any gt, tp++
+                            tp_found = True
+                            markings[idx] = True
+                            break # Not sure if we should break
+                    if not tp_found:
+                        fp+=1 # If the detection doesn't match any gt, fp++
+                # GT not matched by any detection are added to fn
+                fn = markings.count(False)
                 tp_total += tp
                 fp_total += fp
                 fn_total +=fn
 
-            print tp_total, fp_total, fn_total
             if tp_total > 0:
                 prec = tp_total/float((tp_total + fp_total))
                 recall = tp_total/float((tp_total + fn_total))
+                print ('-'*20)
                 print('Precision for {} = {:.4f}'.format(
                                                 self._classes[cls_index],
                                                 prec))
                 print ('Recall for {} = {:.4f}'.format(
                                                 self._classes[cls_index],
                                                 recall))
+                print 'TP: ', tp_total, ' FP: ', fp_total, ' FN: ', fn_total
                 aps += [prec]
                 arcs += [recall]
                 atps += [tp_total]
                 afps += [fp_total]
                 afns += [fn_total]
+
+        print ('-'*20)
         print ('Average Precision: {:.4f}'.format(np.mean(aps)))
         print ('Average Recall: {:.4f}'.format(np.mean(arcs)))
-        print ('Total TP: {}'.format(np.sum(atps)))
-        print ('Total FP: {}'.format(np.sum(afps)))
-        print ('Total FN: {}'.format(np.sum(afns)))
+        print ('True Positives: {}'.format(np.sum(atps)))
+        print ('False Positives: {}'.format(np.sum(afps)))
+        print ('False Negatives: {}'.format(np.sum(afns)))
 
     def iou(self, boxA, boxB):
 	ixmin = np.maximum(boxA[0], boxB[0])
