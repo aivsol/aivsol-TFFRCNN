@@ -20,11 +20,11 @@ from .PVAnet_train import PVAnet_train
 from .PVAnet_test import PVAnet_test
 
 
-def get_network(name):
+def get_network(name, num_classes=21):
     """Get a network by name."""
     if name.split('_')[0] == 'VGGnet':
         if name.split('_')[1] == 'test':
-           return VGGnet_test()
+           return VGGnet_test(num_classes)
         elif name.split('_')[1] == 'train':
            return VGGnet_train()
         elif name.split('_')[1] == 'testold':

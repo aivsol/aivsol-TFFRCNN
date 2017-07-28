@@ -126,7 +126,7 @@ if __name__ == '__main__':
     # init session
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
     # load network
-    net = get_network(args.demo_net)
+    net = get_network(args.demo_net, len(CLASSES))
     # load model
     print ('Loading network {:s}... '.format(args.demo_net)),
     saver = tf.train.Saver()
