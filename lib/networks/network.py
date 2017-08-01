@@ -1,13 +1,12 @@
 import numpy as np
 import tensorflow as tf
-
 from ..fast_rcnn.config import cfg
 from ..roi_pooling_layer import roi_pooling_op as roi_pool_op
 from ..rpn_msr.proposal_layer_tf import proposal_layer as proposal_layer_py
 from ..rpn_msr.anchor_target_layer_tf import anchor_target_layer as anchor_target_layer_py
 from ..rpn_msr.proposal_target_layer_tf import proposal_target_layer as proposal_target_layer_py
 # FCN pooling
-from ..psroi_pooling_layer import psroi_pooling_op as psroi_pooling_op
+#from ..psroi_pooling_layer import psroi_pooling_op as psroi_pooling_op
 
 
 DEFAULT_PADDING = 'SAME'
@@ -234,6 +233,7 @@ class Network(object):
                                     spatial_scale,
                                     name=name)[0]
 
+    '''
     @layer
     def psroi_pool(self, input, output_dim, group_size, spatial_scale, name):
         """contribution by miraclebiu"""
@@ -249,7 +249,7 @@ class Network(object):
                                            group_size=group_size,
                                            spatial_scale=spatial_scale,
                                            name=name)[0]
-
+    '''
     @layer
     def proposal_layer(self, input, _feat_stride, anchor_scales, cfg_key, name):
         if isinstance(input[0], tuple):

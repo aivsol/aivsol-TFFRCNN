@@ -4,18 +4,19 @@ from ..fast_rcnn.config import cfg
 
 
 class VGGnet_test(Network):
-    def __init__(self, trainable=True):
+    def __init__(self, classes=cfg.NCLASSES, trainable=True):
         self.inputs = []
         self.data = tf.placeholder(tf.float32, shape=[None, None, None, 3])
         self.im_info = tf.placeholder(tf.float32, shape=[None, 3])
         self.keep_prob = tf.placeholder(tf.float32)
         self.layers = dict({'data': self.data, 'im_info': self.im_info})
+        self.classes = classes
         self.trainable = trainable
         self.setup()
 
     def setup(self):
         # n_classes = 21
-        n_classes = cfg.NCLASSES
+        n_classes = self.classes
         # anchor_scales = [8, 16, 32]
         anchor_scales = cfg.ANCHOR_SCALES
         _feat_stride = [16, ]

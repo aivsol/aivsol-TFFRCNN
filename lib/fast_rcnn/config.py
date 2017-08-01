@@ -20,6 +20,7 @@ import os
 import os.path as osp
 import numpy as np
 from time import strftime, localtime
+from distutils import spawn
 from easydict import EasyDict as edict
 
 __C = edict()
@@ -34,8 +35,8 @@ cfg = __C
 # region proposal network (RPN) or not
 __C.IS_RPN = True
 __C.ANCHOR_SCALES = [8, 16, 32]
-__C.NCLASSES = 21
-
+__C.NCLASSES = 44
+#__C.NCLASSES = 21
 # multiscale training and testing
 __C.IS_MULTISCALE = False
 __C.IS_EXTRAPOLATING = True
@@ -80,7 +81,7 @@ __C.TRAIN.SCALES = (600,)
 __C.TRAIN.MAX_SIZE = 1000
 
 # Images to use per minibatch
-__C.TRAIN.IMS_PER_BATCH = 2
+__C.TRAIN.IMS_PER_BATCH = 1
 
 # Minibatch size (number of regions of interest [ROIs])
 __C.TRAIN.BATCH_SIZE = 128
@@ -250,11 +251,14 @@ __C.MATLAB = 'matlab'
 __C.EXP_DIR = 'default'
 __C.LOG_DIR = 'default'
 
-# Use GPU implementation of non-maximum suppression
-__C.USE_GPU_NMS = True
+if spawn.find_executable("nvcc"):
+    # Use GPU implementation of non-maximum suppression
+    __C.USE_GPU_NMS = True
 
-# Default GPU device id
-__C.GPU_ID = 0
+    # Default GPU device id
+    __C.GPU_ID = 0
+else:
+    __C.USE_GPU_NMS = False
 
 def get_output_dir(imdb, weights_filename):
     """Return the directory where experimental artifacts are placed.

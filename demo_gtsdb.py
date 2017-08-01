@@ -17,13 +17,20 @@ from lib.utils.timer import Timer
 
 plt.switch_backend('agg')
 
-CLASSES = ('__background__',
-           'aeroplane', 'bicycle', 'bird', 'boat',
-           'bottle', 'bus', 'car', 'cat', 'chair',
-           'cow', 'diningtable', 'dog', 'horse',
-           'motorbike', 'person', 'pottedplant',
-           'sheep', 'sofa', 'train', 'tvmonitor')
-
+CLASSES = ('__background__',  # always index 0
+         'speedlimit-20', 'speedlimit-30', 'speedlimit-50',
+         'speedlimit-60', 'speedlimit-70', 'speedlimit-80',
+         'restrict-end-80', 'speedlimit-100', 'speedlimit-120',
+         'no-overtake', 'no-overtake-truck', 'priority-next-intersect',
+         'priority-road', 'giveaway', 'stop', 'no-traffic-bothways',
+         'no-truck', 'no-entry', 'danger', 'bend-left', 'bend-right',
+         'bend', 'uneven-road', 'slippery-road', 'road-narrow',
+         'construction', 'traffic-signal', 'pedestrian-crossing',
+         'school-crossing', 'cycle-crossing', 'snow', 'animals',
+         'restriction-ends', 'go-right', 'go-left', 'go-straight',
+         'go-right-straight', 'go-left-straight', 'keep-right',
+         'keep-left', 'roundabout', 'restrict-ends-overtaking',
+         'restrict-ends-overtaking-truck')
 
 # CLASSES = ('__background__','person','bike','motorbike','car','bus')
 
@@ -56,6 +63,8 @@ def vis_detections(im, class_name, dets, ax, thresh=0.5,
     plt.axis('off')
     plt.tight_layout()
     if save_img == True:
+        outpath = outpath.replace('.ppm', '.jpg')
+        print outpath
         plt.savefig(outpath, bbox_inches='tight')
     else:
         plt.draw()
@@ -90,7 +99,7 @@ def demo(sess, net, image_name):
                           cls_scores[:, np.newaxis])).astype(np.float32)
         keep = nms(dets, NMS_THRESH)
         dets = dets[keep, :]
-        outpath = os.path.join(cfg.DATA_DIR, "demo",
+        outpath = os.path.join(cfg.DATA_DIR, "demo-gtsdb",
                                "output", image_name.split("/")[-1])
         vis_detections(im, cls, dets, ax, thresh=CONF_THRESH,
                        save_img=True, outpath=outpath)
@@ -119,10 +128,6 @@ if __name__ == '__main__':
 
     args = parse_args()
 
-    if args.model == ' ' or not os.path.exists(args.model):
-        print ('current path is ' + os.path.abspath(__file__))
-        raise IOError(('Error: Model not found.\n'))
-
     # init session
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
     # load network
@@ -138,10 +143,10 @@ if __name__ == '__main__':
     for i in xrange(2):
         _, _ = im_detect(sess, net, im)
 
-    im_names = glob.glob(os.path.join(cfg.DATA_DIR, 'demo', '*.png')) + \
-               glob.glob(os.path.join(cfg.DATA_DIR, 'demo', '*.jpg'))
+    im_names = glob.glob(os.path.join(cfg.DATA_DIR, 'demo-gtsdb', '*.ppm')) + \
+               glob.glob(os.path.join(cfg.DATA_DIR, 'demo-demo-gtsdb', '*.ppm'))
 
-    OUTPUT_DIR = os.path.join(cfg.DATA_DIR, 'demo', 'output')
+    OUTPUT_DIR = os.path.join(cfg.DATA_DIR, 'demo-gtsdb', 'output')
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
 
